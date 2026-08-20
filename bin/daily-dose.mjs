@@ -66,6 +66,7 @@ Usage:
   daily-dose seed [--force]      Add demo activity for the current day
   daily-dose backup              Copy the DB into ~/.daily-dose-claude/backups
   daily-dose reset [--yes]       Empty the DB (keeps schema)
+  daily-dose diagnose            Snapshot hooks, MCP, DB, and log to help debug capture
   daily-dose --help              This help text
 
 Data root: ~/.daily-dose-claude/
@@ -96,6 +97,10 @@ switch (cmd) {
     break;
   case 'reset':
     runTsx(path.join(REPO_ROOT, 'scripts/reset.ts'), rest);
+    break;
+  case 'diagnose':
+  case 'diag':
+    runTsx(path.join(REPO_ROOT, 'scripts/diagnose.ts'), rest);
     break;
   case 'build': {
     const b1 = spawnSync('npm', ['run', 'build:node'], { cwd: REPO_ROOT, stdio: 'inherit' });

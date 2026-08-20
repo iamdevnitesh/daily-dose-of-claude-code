@@ -125,10 +125,13 @@ async function main() {
   console.log('');
   log('Installation complete.', 'ok');
   console.log('');
+  console.log('  ⚠  IMPORTANT: Hooks only take effect for NEW Claude Code sessions.');
+  console.log('     Fully quit any running Claude Code sessions and start a new one.');
+  console.log('');
   console.log('  Next steps:');
-  console.log('    • npm run doctor');
-  console.log('    • npm run seed   (optional demo data)');
-  console.log('    • npm run dev    (UI at http://localhost:3000)');
+  console.log('    • Quit + relaunch Claude Code, submit any prompt');
+  console.log('    • npm run dev             (UI at http://localhost:3000)');
+  console.log('    • daily-dose diagnose     (if no activity shows up)');
   console.log('');
   console.log(`  Claude data root: ${CLAUDE_DIR}`);
   console.log(`  Daily Dose root:  ${DD_ROOT}`);
