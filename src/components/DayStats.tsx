@@ -25,18 +25,18 @@ export function DayStats({
   if (stats.toolFailures) rows.push(['Tool failures', stats.toolFailures]);
   return (
     <section className="mt-6 rule border-t md:border md:rounded-lg md:p-5">
-      <h2 className="serif text-lg font-bold uppercase tracking-wider mb-3">By The Numbers</h2>
-      <dl className="grid grid-cols-2 gap-y-2">
+      <h2 className="serif text-lg font-bold uppercase tracking-wider mb-4">By The Numbers</h2>
+      <dl className="grid grid-cols-2 gap-x-5 gap-y-4">
         {rows.map(([k, v]) => (
-          <div key={k} className="flex items-baseline justify-between gap-3 col-span-2 sm:col-span-1">
-            <dt className="text-xs mono uppercase tracking-widest text-muted">{k}</dt>
-            <dd className="serif text-2xl font-black">{v}</dd>
+          <div key={k} className="min-w-0">
+            <dt className="text-[10px] mono uppercase tracking-widest text-muted leading-tight">{k}</dt>
+            <dd className="serif text-3xl font-black leading-none mt-1 tabular-nums">{v}</dd>
           </div>
         ))}
       </dl>
       {projects.length > 0 && (
-        <div className="mt-4">
-          <div className="text-[11px] mono uppercase tracking-widest text-muted mb-2">Projects touched</div>
+        <div className="mt-5 pt-4 hairline-top">
+          <div className="text-[10px] mono uppercase tracking-widest text-muted mb-2">Projects touched</div>
           <ul className="flex flex-wrap gap-1.5">
             {projects.map((p) => (
               <li key={p} className="text-xs mono rule border rounded-full px-2 py-0.5">
