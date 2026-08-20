@@ -28,7 +28,7 @@ export default function DayPage({ params }: Props) {
       {isToday && <AutoRefresh />}
 
       <div className="grid grid-cols-1 md:grid-cols-3 md:gap-10 mt-2">
-        <main className="md:col-span-2">
+        <main className="md:col-span-2 md:col-start-2 md:row-start-1">
           {view.turns.length === 0 ? (
             <EmptyEdition dayKey={dayKey} />
           ) : (
@@ -39,7 +39,7 @@ export default function DayPage({ params }: Props) {
             </>
           )}
         </main>
-        <div className="md:col-span-1 space-y-6 md:mt-2">
+        <aside className="md:col-span-1 md:col-start-1 md:row-start-1 space-y-6 md:mt-2 md:sticky md:top-6 md:self-start">
           <TodoDesk
             dayKey={dayKey}
             openTodos={view.openTodos}
@@ -47,7 +47,7 @@ export default function DayPage({ params }: Props) {
             todosCompleted={view.todosCompleted}
           />
           <DayStats stats={view.stats} projects={view.projects} />
-        </div>
+        </aside>
       </div>
 
       <EndOfEdition dayKey={dayKey} />
