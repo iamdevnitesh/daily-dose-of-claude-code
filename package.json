@@ -1,0 +1,65 @@
+{
+  "name": "daily-dose-of-claude-code",
+  "version": "1.0.0",
+  "description": "A local newspaper-style memory system for Claude Code activity",
+  "type": "module",
+  "bin": {
+    "daily-dose": "bin/daily-dose.mjs"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "public",
+    "scripts",
+    "src",
+    "next.config.mjs",
+    "postcss.config.mjs",
+    "tailwind.config.ts",
+    "tsconfig.json",
+    "tsconfig.node.json",
+    "next-env.d.ts",
+    "README.md",
+    "CLAUDE.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build && npm run build:node",
+    "start": "next start -p 3000",
+    "build:node": "tsc -p tsconfig.node.json && node -e \"require('fs').writeFileSync('dist/package.json', JSON.stringify({type:'commonjs'}))\"",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "migrate": "tsx scripts/migrate.ts",
+    "seed": "tsx scripts/seed.ts",
+    "doctor": "tsx scripts/doctor.ts",
+    "backup": "tsx scripts/backup.ts",
+    "install:daily-dose": "tsx scripts/install.ts",
+    "uninstall:daily-dose": "tsx scripts/uninstall.ts",
+    "reset": "tsx scripts/reset.ts",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "better-sqlite3": "^11.3.0",
+    "next": "^14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.1"
+  }
+}

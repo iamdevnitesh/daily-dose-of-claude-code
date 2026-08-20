@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --paper: 245 240 232;
+  --card: 250 246 239;
+  --ink: 37 34 31;
+  --muted: 116 110 102;
+  --claude: 217 119 87;
+  --accent: 217 119 87;
+  --rule: 214 206 194;
+}
+
+:root.dark {
+  --paper: 24 22 21;
+  --card: 32 29 27;
+  --ink: 240 232 220;
+  --muted: 168 158 145;
+  --claude: 219 132 102;
+  --accent: 219 132 102;
+  --rule: 60 54 50;
+}
+
+html,
+body {
+  background: rgb(var(--paper));
+  color: rgb(var(--ink));
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@font-face {
+  font-family: 'Playfair Display';
+  src: local('Playfair Display'), local('Times New Roman'), local('Georgia');
+  font-weight: 400 900;
+  font-style: normal italic;
+  font-display: swap;
+}
+
+.serif {
+  font-family: 'Playfair Display', 'Source Serif Pro', Georgia, 'Times New Roman', serif;
+  font-feature-settings: 'liga' 1, 'kern' 1;
+  letter-spacing: -0.01em;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.rule {
+  border-color: rgb(var(--rule));
+}
+
+.paper-shadow {
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03), 0 8px 30px -20px rgba(0, 0, 0, 0.08);
+}
+
+.newsprint {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.dot-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgb(var(--claude));
+  box-shadow: 0 0 0 rgba(var(--claude), 0.6);
+  animation: dp 1.4s infinite;
+}
+
+@keyframes dp {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--claude), 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(var(--claude), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--claude), 0);
+  }
+}
+
+.hairline-top {
+  border-top: 1px solid rgb(var(--rule));
+}
+.hairline-bottom {
+  border-bottom: 1px solid rgb(var(--rule));
+}

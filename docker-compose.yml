@@ -1,0 +1,31 @@
+# Daily Dose of Claude Code — UI-only Compose file.
+#
+# Volume mount points the container's DAILY_DOSE_HOME at your host's
+# ~/.daily-dose-claude, so the newspaper UI reads and writes the same
+# SQLite DB that the host-installed hooks and MCP server use.
+#
+# Prerequisite: install hooks/MCP on the host once with:
+#   npx daily-dose install
+# (Docker cannot run the hooks — Claude Code spawns them on the host.)
+
+services:
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: daily-dose-ui:latest
+    container_name: daily-dose-ui
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DAILY_DOSE_HOME: /data
+      NODE_ENV: production
+    volumes:
+      - ${DAILY_DOSE_HOME:-${HOME}/.daily-dose-claude}:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

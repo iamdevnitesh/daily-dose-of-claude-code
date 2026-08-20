@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": false,
+    "sourceMap": false,
+    "resolveJsonModule": true,
+    "isolatedModules": false,
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "src/lib/**/*.ts",
+    "src/hooks/**/*.ts",
+    "src/mcp/**/*.ts"
+  ],
+  "exclude": ["src/app", "src/components", "node_modules", "tests"]
+}
