@@ -111,6 +111,22 @@ export function summarizeToolInput(toolName: string, input: any): string {
       case 'task':
       case 'agent':
         return input.description ? `Delegated: ${short(String(input.description), 80)}` : 'Delegated task';
+      case 'todowrite':
+      case 'todo_write':
+        // Preserve the full todos JSON so session task extraction can parse it.
+        if (Array.isArray(input.todos)) {
+          try {
+            const compact = input.todos.map((t: any) => ({
+              content: String(t?.content || t?.title || '').slice(0, 200),
+              status: String(t?.status || 'pending'),
+              ...(t?.activeForm ? { activeForm: String(t.activeForm) } : {})
+            }));
+            return `TodoWrite ${JSON.stringify(compact)}`;
+          } catch {
+            return 'TodoWrite';
+          }
+        }
+        return 'TodoWrite';
       default:
         if (t.startsWith('mcp__')) {
           return `MCP ${t.replace(/^mcp__/, '')}`;

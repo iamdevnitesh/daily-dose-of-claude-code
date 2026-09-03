@@ -12,6 +12,11 @@ export interface SessionRow {
   ended_at: string | null;
   source: string | null;
   transcript_path: string | null;
+  session_title: string | null;
+  session_summary: string | null;
+  session_tasks_json: string | null;
+  summary_source: string | null;
+  summary_generated_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -96,4 +101,42 @@ export function findSessionByClaudeId(claude_session_id: string): SessionRow | n
     | SessionRow
     | undefined;
   return row ?? null;
+}
+
+export function getSessionByInternalId(id: string): SessionRow | null {
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM sessions WHERE id = ?').get(id) as SessionRow | undefined;
+  return row ?? null;
+}
+
+export function saveSessionSummary(
+  id: string,
+  input: {
+    title?: string | null;
+    summary?: string | null;
+    tasks_json?: string | null;
+    source: 'haiku' | 'deterministic';
+  }
+): SessionRow | null {
+  const db = getDb();
+  const now = nowIso();
+  db.prepare(
+    `UPDATE sessions SET
+      session_title = COALESCE(?, session_title),
+      session_summary = COALESCE(?, session_summary),
+      session_tasks_json = COALESCE(?, session_tasks_json),
+      summary_source = ?,
+      summary_generated_at = ?,
+      updated_at = ?
+     WHERE id = ?`
+  ).run(
+    input.title ?? null,
+    input.summary ?? null,
+    input.tasks_json ?? null,
+    input.source,
+    now,
+    now,
+    id
+  );
+  return getSessionByInternalId(id);
 }

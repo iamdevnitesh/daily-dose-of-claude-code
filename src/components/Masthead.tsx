@@ -15,6 +15,7 @@ export function Masthead({ dayKey }: { dayKey: string }) {
           {isToday && <LiveIndicator />}
         </div>
         <div className="flex items-center gap-3">
+          <Link href="/todos" className="hover:text-ink">Todos</Link>
           <Link href="/search" className="hover:text-ink">Search</Link>
           <Link href="/settings" className="hover:text-ink">Settings</Link>
           <ThemeToggle />

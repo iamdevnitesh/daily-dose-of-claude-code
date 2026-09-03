@@ -141,6 +141,18 @@ const MIGRATIONS: Migration[] = [
         );
       `);
     }
+  },
+  {
+    version: 2,
+    name: 'session_summary_fields',
+    up: (db) => {
+      const cols = (db.prepare("PRAGMA table_info(sessions)").all() as { name: string }[]).map((c) => c.name);
+      if (!cols.includes('session_title')) db.exec(`ALTER TABLE sessions ADD COLUMN session_title TEXT`);
+      if (!cols.includes('session_summary')) db.exec(`ALTER TABLE sessions ADD COLUMN session_summary TEXT`);
+      if (!cols.includes('session_tasks_json')) db.exec(`ALTER TABLE sessions ADD COLUMN session_tasks_json TEXT`);
+      if (!cols.includes('summary_source')) db.exec(`ALTER TABLE sessions ADD COLUMN summary_source TEXT`);
+      if (!cols.includes('summary_generated_at')) db.exec(`ALTER TABLE sessions ADD COLUMN summary_generated_at TEXT`);
+    }
   }
 ];
 

@@ -2,14 +2,30 @@ import { getDb } from '../client';
 import { localDayKey } from '../../time';
 import type { TurnRow } from './turns';
 import type { TodoRow } from './todos';
-import type { ToolEventRow } from './toolEvents';
-import type { FileChangeRow } from './fileChanges';
+import type { SessionRow } from './sessions';
 import { listTurnsForDay } from './turns';
 import { todosCreatedOnDay, todosCompletedOnDay, listTodos } from './todos';
+
+export interface SessionCard {
+  session: SessionRow;
+  turnCount: number;
+  completedTurnCount: number;
+  startedAt: string;
+  endedAt: string | null;
+  filesTouched: number;
+  commandsRun: number;
+  toolFailures: number;
+  taskCount: number;
+  title: string;
+  summary: string | null;
+  summarySource: 'haiku' | 'deterministic' | null;
+}
 
 export interface DayView {
   dayKey: string;
   turns: TurnRow[];
+  sessions: SessionCard[];
+  leadSessionId: string | null;
   leadStoryId: string | null;
   projects: string[];
   todosCreated: TodoRow[];
@@ -46,17 +62,82 @@ export function buildDayView(dayKey: string): DayView {
 
   const projects = Array.from(new Set(turns.map((t) => t.project_name).filter(Boolean))) as string[];
 
-  const sessionIds = new Set(turns.map((t) => t.session_id));
-
-  let filesTouched = 0;
-  let commandsRun = 0;
-  let toolFailures = 0;
+  // Group turns by session_id
+  const byId = new Map<string, TurnRow[]>();
   for (const t of turns) {
-    if (t.files_modified_json) filesTouched += (JSON.parse(t.files_modified_json) as string[]).length;
-    if (t.commands_run_json) commandsRun += (JSON.parse(t.commands_run_json) as string[]).length;
-    if (typeof t.tool_failures === 'number') toolFailures += t.tool_failures;
+    if (!byId.has(t.session_id)) byId.set(t.session_id, []);
+    byId.get(t.session_id)!.push(t);
   }
-  const completedTurnCount = turns.filter((t) => t.status === 'completed').length;
+
+  const sessionCards: SessionCard[] = [];
+  let dayFilesTouched = 0;
+  let dayCommandsRun = 0;
+  let dayToolFailures = 0;
+
+  for (const [sessionId, sessionTurns] of byId) {
+    const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(sessionId) as SessionRow | undefined;
+    if (!session) continue;
+    const sortedTurns = sessionTurns.slice().sort((a, b) => a.started_at.localeCompare(b.started_at));
+    const filesSet = new Set<string>();
+    let commandsRun = 0;
+    let toolFailures = 0;
+    let completedTurnCount = 0;
+    let taskCount = 0;
+    for (const t of sortedTurns) {
+      if (t.files_modified_json) {
+        try {
+          for (const f of JSON.parse(t.files_modified_json) as string[]) filesSet.add(f);
+        } catch { /* ignore */ }
+      }
+      if (t.commands_run_json) {
+        try {
+          commandsRun += (JSON.parse(t.commands_run_json) as string[]).length;
+        } catch { /* ignore */ }
+      }
+      if (typeof t.tool_failures === 'number') toolFailures += t.tool_failures;
+      if (t.status === 'completed') completedTurnCount++;
+      taskCount++;
+    }
+    dayFilesTouched += filesSet.size;
+    dayCommandsRun += commandsRun;
+    dayToolFailures += toolFailures;
+
+    const startedAt = sortedTurns[0].started_at;
+    const endedAt = sortedTurns[sortedTurns.length - 1].ended_at || session.ended_at;
+    const derivedTitle =
+      session.session_title ||
+      (session.session_tasks_json ? null : null) ||
+      sortedTurns.find((t) => t.title)?.title ||
+      sortedTurns[0].user_prompt?.split('\n')[0]?.slice(0, 80) ||
+      'Claude Code session';
+
+    sessionCards.push({
+      session,
+      turnCount: sortedTurns.length,
+      completedTurnCount,
+      startedAt,
+      endedAt,
+      filesTouched: filesSet.size,
+      commandsRun,
+      toolFailures,
+      taskCount,
+      title: derivedTitle,
+      summary: session.session_summary,
+      summarySource: (session.summary_source as 'haiku' | 'deterministic' | null) || null
+    });
+  }
+
+  sessionCards.sort((a, b) => a.startedAt.localeCompare(b.startedAt));
+
+  let leadSessionId: string | null = null;
+  let bestScore = -1;
+  for (const c of sessionCards) {
+    const score = c.taskCount * 5 + c.filesTouched * 3 + c.commandsRun + (c.completedTurnCount ? 4 : 0);
+    if (score > bestScore) {
+      bestScore = score;
+      leadSessionId = c.session.id;
+    }
+  }
 
   let leadStoryId: string | null = null;
   let best = -1;
@@ -70,19 +151,20 @@ export function buildDayView(dayKey: string): DayView {
 
   const summary = buildSummary({
     turnCount: turns.length,
-    completedTurnCount,
+    completedTurnCount: sessionCards.reduce((n, c) => n + c.completedTurnCount, 0),
     projects,
-    filesTouched,
-    commandsRun,
-    toolFailures,
+    filesTouched: dayFilesTouched,
+    commandsRun: dayCommandsRun,
+    toolFailures: dayToolFailures,
     todosCreated: todosCreated.length,
     todosCompleted: todosCompleted.length
   });
 
-  void db;
   return {
     dayKey,
     turns,
+    sessions: sessionCards,
+    leadSessionId,
     leadStoryId,
     projects,
     todosCreated,
@@ -90,14 +172,14 @@ export function buildDayView(dayKey: string): DayView {
     openTodos,
     stats: {
       turnCount: turns.length,
-      completedTurnCount,
+      completedTurnCount: sessionCards.reduce((n, c) => n + c.completedTurnCount, 0),
       projectCount: projects.length,
-      filesTouched,
-      commandsRun,
-      toolFailures,
+      filesTouched: dayFilesTouched,
+      commandsRun: dayCommandsRun,
+      toolFailures: dayToolFailures,
       todosCreated: todosCreated.length,
       todosCompleted: todosCompleted.length,
-      sessionCount: sessionIds.size
+      sessionCount: sessionCards.length
     },
     summary
   };
