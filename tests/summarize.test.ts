@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateTitle, generateSummary, summarizeToolInput } from '../src/lib/summarize';
+import { generateTitle, generateSummary, summarizeToolInput, stripTagsAndIds } from '../src/lib/summarize';
 
 describe('summarize', () => {
   it('picks a verb + object title from user prompt', () => {
@@ -30,5 +30,24 @@ describe('summarize', () => {
     expect(summarizeToolInput('Read', { file_path: '/tmp/x.ts' })).toContain('Read');
     expect(summarizeToolInput('Edit', { file_path: '/tmp/x.ts' })).toContain('Modified');
     expect(summarizeToolInput('Bash', { command: 'npm test' })).toContain('npm test');
+  });
+
+  it('stripTagsAndIds removes XML tags, tool-use ids, and long hex blobs', () => {
+    const dirty =
+      'Tested service · <task-notification> <task-id>bwd6vzm7u</task-id> <tool-use-id>toolu_019yXPqg6xT8abc</tool-use-id> and x-ua-token=6aa3fe3c683179948d37e2bf1c26b270';
+    const clean = stripTagsAndIds(dirty);
+    expect(clean).not.toMatch(/</);
+    expect(clean).not.toMatch(/toolu_/);
+    expect(clean).not.toMatch(/6aa3fe3c68317994/);
+    expect(clean).toMatch(/Tested service/);
+  });
+
+  it('generateTitle strips tags/ids and produces a clean verb+object title', () => {
+    const t = generateTitle(
+      'Debug why <task-notification>the pipeline</task-notification> is slow — trace toolu_019yXPqg6xT8abc'
+    );
+    expect(t).not.toMatch(/</);
+    expect(t).not.toMatch(/toolu_/);
+    expect(t.length).toBeLessThanOrEqual(80);
   });
 });

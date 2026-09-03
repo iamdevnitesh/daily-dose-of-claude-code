@@ -2,6 +2,7 @@ import { getDb } from '../db/client';
 import { getSessionByInternalId, saveSessionSummary, type SessionRow } from '../db/repositories/sessions';
 import { extractSessionTasks, type SessionTaskItem } from './tasks';
 import { redactText } from '../redaction';
+import { stripTagsAndIds } from '../summarize';
 import { log } from '../logger';
 
 const MODEL = process.env.DAILY_DOSE_HAIKU_MODEL || 'claude-haiku-4-5';
@@ -85,7 +86,10 @@ export function aggregateSession(session: SessionRow): Aggregated {
 }
 
 export function deterministicSummary(agg: Aggregated): { title: string; summary: string } {
-  const primaryTitle = agg.turnTitles[0] || agg.userPrompts[0]?.slice(0, 80) || 'Claude Code session';
+  const cleanTitles = agg.turnTitles.map((t) => stripTagsAndIds(t)).filter(Boolean);
+  const cleanPrompts = agg.userPrompts.map((p) => stripTagsAndIds(p)).filter(Boolean);
+
+  const primaryTitle = cleanTitles[0] || cleanPrompts[0]?.slice(0, 80) || 'Claude Code session';
   const cleanedTitle = primaryTitle.replace(/\s+/g, ' ').trim().slice(0, 90);
 
   const parts: string[] = [];
@@ -94,9 +98,9 @@ export function deterministicSummary(agg: Aggregated): { title: string; summary:
   const projectClause = agg.projectName ? ` in ${agg.projectName}` : '';
   parts.push(`Worked on ${workNoun}${projectClause}${durationClause}.`);
 
-  if (agg.turnTitles.length > 1) {
-    const bullets = agg.turnTitles.slice(0, 4).join(' · ');
-    parts.push(bullets);
+  if (cleanTitles.length > 1) {
+    const bullets = cleanTitles.slice(0, 4).join(' · ');
+    if (bullets) parts.push(bullets);
   }
 
   const stats: string[] = [];
@@ -153,20 +157,23 @@ function buildHaikuPrompt(agg: Aggregated, tasks: SessionTaskItem[]): string {
   lines.push(`Project: ${agg.projectName || 'unknown'}${agg.branch ? ' · ' + agg.branch : ''}`);
   if (agg.durationMinutes) lines.push(`Duration: ${humanMinutes(agg.durationMinutes)}`);
   lines.push(`Turns: ${agg.turnCount}`);
-  if (agg.turnTitles.length) {
+  const cleanTitles = agg.turnTitles.map(stripTagsAndIds).filter(Boolean);
+  const cleanSummaries = agg.turnSummaries.map(stripTagsAndIds).filter(Boolean);
+  const cleanPrompts = agg.userPrompts.map(stripTagsAndIds).filter(Boolean);
+  if (cleanTitles.length) {
     lines.push('');
     lines.push('Turn titles (chronological):');
-    for (const t of agg.turnTitles.slice(0, 30)) lines.push(`- ${t}`);
+    for (const t of cleanTitles.slice(0, 30)) lines.push(`- ${t}`);
   }
-  if (agg.turnSummaries.length) {
+  if (cleanSummaries.length) {
     lines.push('');
     lines.push('Turn summaries:');
-    for (const s of agg.turnSummaries.slice(0, 20)) lines.push(`- ${s}`);
+    for (const s of cleanSummaries.slice(0, 20)) lines.push(`- ${s}`);
   }
   if (tasks.length) {
     lines.push('');
     lines.push('Tasks Claude tracked in this session:');
-    for (const t of tasks.slice(0, 30)) lines.push(`- [${t.status}] ${t.content}`);
+    for (const t of tasks.slice(0, 30)) lines.push(`- [${t.status}] ${stripTagsAndIds(t.content)}`);
   }
   if (agg.filesTouched.length) {
     lines.push('');
@@ -176,10 +183,10 @@ function buildHaikuPrompt(agg: Aggregated, tasks: SessionTaskItem[]): string {
     lines.push('');
     lines.push(`Sample commands: ${agg.commandsRun.slice(0, 6).join(' | ')}`);
   }
-  if (agg.userPrompts.length) {
+  if (cleanPrompts.length) {
     lines.push('');
     lines.push('First user prompt:');
-    lines.push(agg.userPrompts[0].slice(0, 400));
+    lines.push(cleanPrompts[0].slice(0, 400));
   }
   return redactText(lines.join('\n'));
 }

@@ -1,5 +1,28 @@
 import { redactText } from './redaction';
 
+// Strip XML-ish tool orchestration tags and long random identifiers so they
+// don't leak into human-facing titles/summaries. Removes:
+//   <task-notification>…</task-notification>, <task-id>xxx</task-id>
+//   <tool-use-id>toolu_…</tool-use-id>, standalone <foo> or </foo>
+//   Anthropic/Claude internal ids like toolu_XXX, tool_XXX
+//   Long hex/base64-ish blobs (≥16 chars) that read as noise
+export function stripTagsAndIds(input: string): string {
+  if (!input) return '';
+  let out = String(input);
+  // Remove any <foo>…</foo> block content (best effort, non-greedy)
+  out = out.replace(/<([a-z][a-z0-9_-]*)([^>]*)>[\s\S]*?<\/\1>/gi, ' ');
+  // Remove any standalone/self-closing <foo>, </foo>, <foo/>
+  out = out.replace(/<\/?[a-z][a-z0-9_-]*[^>]*>/gi, ' ');
+  // Remove obvious tool_use ids
+  out = out.replace(/\btoolu_[A-Za-z0-9_-]{6,}/g, ' ');
+  out = out.replace(/\btool_[A-Za-z0-9_-]{6,}/g, ' ');
+  // Remove long hex/base64-ish runs (≥20 chars, no spaces)
+  out = out.replace(/\b[A-Fa-f0-9]{20,}\b/g, ' ');
+  out = out.replace(/\b[A-Za-z0-9+/=_-]{28,}\b/g, ' ');
+  // Collapse whitespace
+  return out.replace(/\s+/g, ' ').trim();
+}
+
 const VERB_MAP: Array<[RegExp, string]> = [
   [/\b(debug|troubleshoot|diagnose|investigate)\b/i, 'Investigated'],
   [/\b(fix|patch|repair)\b/i, 'Fixed'],
@@ -28,9 +51,9 @@ function truncate(text: string, n: number): string {
 }
 
 export function generateTitle(userPrompt: string | null | undefined, assistantResponse?: string | null): string {
-  const prompt = redactText(userPrompt || '').trim();
+  const prompt = stripTagsAndIds(redactText(userPrompt || '')).trim();
   if (!prompt) {
-    const resp = redactText(assistantResponse || '').trim();
+    const resp = stripTagsAndIds(redactText(assistantResponse || '')).trim();
     if (!resp) return 'Claude Session';
     return truncate(firstSentence(resp).replace(/^[\s"'`]*/, ''), 80);
   }
@@ -61,11 +84,11 @@ export function generateSummary(opts: {
   toolFailures?: number;
 }): string {
   const parts: string[] = [];
-  const resp = redactText(opts.assistantResponse || '').trim();
+  const resp = stripTagsAndIds(redactText(opts.assistantResponse || '')).trim();
   if (resp) {
     parts.push(truncate(firstSentence(resp), 280));
   } else {
-    const prompt = redactText(opts.userPrompt || '').trim();
+    const prompt = stripTagsAndIds(redactText(opts.userPrompt || '')).trim();
     if (prompt) parts.push(truncate(firstSentence(prompt), 240));
   }
   const stats: string[] = [];
