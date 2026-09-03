@@ -30,9 +30,22 @@ Or, if you've already cloned this repo:
 
 It clones to `~/daily-dose-of-claude-code`, installs deps, builds the hooks/MCP,
 merges into `~/.claude/settings.json` (backing up first), adds a small managed
-section to `~/.claude/CLAUDE.md`, and runs the doctor. The installer detects
-whether Docker is present; if it isn't, the "next steps" hint quietly skips
-the Docker option — no error, no dead-end command.
+section to `~/.claude/CLAUDE.md`, and runs the doctor.
+
+**About Docker**: it's optional. If you're on macOS and Docker isn't installed,
+the installer asks whether to install Docker Desktop via Homebrew (`brew install
+--cask docker-desktop`). Skip it with `--no-docker`, auto-accept with `--yes`:
+
+```bash
+# Skip the Docker question entirely
+curl -fsSL https://raw.githubusercontent.com/iamdevnitesh/daily-dose-of-claude-code/main/install.sh | bash -s -- --no-docker
+
+# Or auto-install Docker Desktop when missing (macOS + Homebrew only)
+curl -fsSL https://raw.githubusercontent.com/iamdevnitesh/daily-dose-of-claude-code/main/install.sh | bash -s -- --yes
+```
+
+If Homebrew isn't installed, the installer tells you how to get it and moves
+on — Daily Dose still installs fine.
 
 ### Option 2 — npm
 

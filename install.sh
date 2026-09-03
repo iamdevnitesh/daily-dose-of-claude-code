@@ -22,12 +22,87 @@ set -euo pipefail
 REPO_URL="${DAILY_DOSE_REPO_URL:-https://github.com/iamdevnitesh/daily-dose-of-claude-code.git}"
 INSTALL_DIR="${DAILY_DOSE_INSTALL_DIR:-$HOME/daily-dose-of-claude-code}"
 
+# --yes / --auto-docker : install Docker via Homebrew without prompting (macOS only)
+# --no-docker           : never try to install Docker
+AUTO_DOCKER=0
+SKIP_DOCKER=0
+for arg in "$@"; do
+  case "$arg" in
+    --yes|-y|--auto-docker) AUTO_DOCKER=1 ;;
+    --no-docker)            SKIP_DOCKER=1 ;;
+    -h|--help)
+      cat <<EOF
+Daily Dose of Claude Code — installer
+
+Usage: install.sh [--yes] [--no-docker]
+
+  --yes, -y, --auto-docker   Install Docker Desktop via Homebrew if missing (macOS only)
+  --no-docker                Skip the Docker check entirely
+  -h, --help                 Show this help
+EOF
+      exit 0
+      ;;
+  esac
+done
+
 C_BOLD=$'\033[1m'; C_DIM=$'\033[2m'; C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'; C_RED=$'\033[31m'; C_RESET=$'\033[0m'
 
 info()  { printf "%s\n" "${C_DIM}· $*${C_RESET}"; }
 ok()    { printf "%s\n" "${C_GREEN}✓ $*${C_RESET}"; }
 warn()  { printf "%s\n" "${C_YELLOW}! $*${C_RESET}"; }
 fail()  { printf "%s\n" "${C_RED}✗ $*${C_RESET}" >&2; exit 1; }
+
+# If Docker isn't installed on macOS and Homebrew is available, offer to
+# install Docker Desktop via Homebrew. Handles both interactive shells and
+# piped `curl … | bash` — in the piped case, prompt is read from /dev/tty.
+maybe_install_docker_via_brew() {
+  local os
+  os="$(uname -s)"
+
+  if [ "${os}" != "Darwin" ]; then
+    info "Docker not installed. It's optional. On Linux/Windows, use your"
+    info "  package manager or https://docs.docker.com/get-docker/"
+    return 0
+  fi
+
+  if ! command -v brew >/dev/null 2>&1; then
+    info "Docker not installed. Homebrew was not detected either."
+    info "  If you want the container UI later, install Homebrew from https://brew.sh"
+    info "  then run: brew install --cask docker-desktop"
+    return 0
+  fi
+
+  local reply=""
+  if [ "${AUTO_DOCKER}" -eq 1 ]; then
+    reply="y"
+    info "Docker not installed — --yes/--auto-docker specified, installing…"
+  elif [ -e /dev/tty ]; then
+    printf "%s" "${C_BOLD}Docker is not installed. Install Docker Desktop via 'brew install --cask docker-desktop'? [y/N] ${C_RESET}" > /dev/tty
+    read reply < /dev/tty || reply=""
+  else
+    info "Docker not installed and no interactive terminal — skipping."
+    info "  Install later with: brew install --cask docker-desktop"
+    return 0
+  fi
+
+  case "${reply}" in
+    y|Y|yes|YES)
+      info "Installing Docker Desktop via Homebrew (this can take a few minutes and hundreds of MB)…"
+      # Newer Homebrew uses the `docker-desktop` cask; older versions used `docker`.
+      if brew install --cask docker-desktop 2>/dev/null || brew install --cask docker; then
+        ok "Docker Desktop installed."
+        info "  You'll need to open Docker.app once to accept the terms before running \`docker compose up -d\`."
+        HAS_DOCKER=1
+      else
+        warn "Homebrew failed to install Docker Desktop. Skipping — Docker remains optional."
+        warn "  You can try later with: brew install --cask docker-desktop"
+      fi
+      ;;
+    *)
+      info "Skipping Docker install. It's optional; the UI works fine via \`npm run dev\`."
+      ;;
+  esac
+}
 
 echo ""
 echo "${C_BOLD}🗞  Daily Dose of Claude Code — installer${C_RESET}"
@@ -49,6 +124,10 @@ HAS_DOCKER=0
 if command -v docker >/dev/null 2>&1; then
   HAS_DOCKER=1
   info "Docker detected — optional container UI available"
+elif [ "${SKIP_DOCKER}" -eq 1 ]; then
+  info "Skipping Docker check (--no-docker)"
+else
+  maybe_install_docker_via_brew
 fi
 
 if [ -d "${INSTALL_DIR}/.git" ]; then
