@@ -35,12 +35,21 @@ echo ""
 
 command -v git >/dev/null 2>&1 || fail "git is required"
 command -v node >/dev/null 2>&1 || fail "Node.js ≥18 is required (https://nodejs.org)"
+command -v npm >/dev/null 2>&1 || fail "npm is required (it ships with Node.js)"
 
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
 if [ "${NODE_MAJOR}" -lt 18 ]; then
   fail "Node.js ≥18 required (found $(node -v))"
 fi
 ok "Node.js $(node -v)"
+
+# Docker is OPTIONAL — only needed if you want to run the UI in a container
+# instead of via `npm run dev`. Hooks + MCP + the UI all work without Docker.
+HAS_DOCKER=0
+if command -v docker >/dev/null 2>&1; then
+  HAS_DOCKER=1
+  info "Docker detected — optional container UI available"
+fi
 
 if [ -d "${INSTALL_DIR}/.git" ]; then
   info "Updating existing checkout at ${INSTALL_DIR}"
@@ -79,6 +88,10 @@ echo ""
 echo "${C_BOLD}Next steps${C_RESET}"
 echo "  1. Quit + relaunch Claude Code (Cmd+Q, then reopen), submit any prompt"
 echo "  2. Start the newspaper UI:   ${C_BOLD}cd ${INSTALL_DIR} && npm run dev${C_RESET}   (http://localhost:3000)"
-echo "     Or with Docker (UI only): ${C_BOLD}cd ${INSTALL_DIR} && docker compose up -d${C_RESET}"
+if [ "${HAS_DOCKER}" -eq 1 ]; then
+  echo "     Or with Docker (UI only): ${C_BOLD}cd ${INSTALL_DIR} && docker compose up -d${C_RESET}"
+else
+  echo "     (Docker is optional; install it if you want to run the UI in a container.)"
+fi
 echo "  3. Not seeing activity?      ${C_BOLD}daily-dose diagnose${C_RESET}   (or ${C_BOLD}node ${INSTALL_DIR}/bin/daily-dose.mjs diagnose${C_RESET})"
 echo ""

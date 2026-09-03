@@ -14,6 +14,8 @@ Nothing leaves your machine.
 
 ## Installation
 
+**Requirements**: `git`, `node ≥ 18` (which bundles `npm`), and [Claude Code](https://docs.anthropic.com/claude-code). **Docker is not required** — it's only an optional way to run the UI in a container instead of via `npm run dev`.
+
 ### Option 1 — One-line installer (recommended)
 
 ```bash
@@ -28,7 +30,9 @@ Or, if you've already cloned this repo:
 
 It clones to `~/daily-dose-of-claude-code`, installs deps, builds the hooks/MCP,
 merges into `~/.claude/settings.json` (backing up first), adds a small managed
-section to `~/.claude/CLAUDE.md`, and runs the doctor.
+section to `~/.claude/CLAUDE.md`, and runs the doctor. The installer detects
+whether Docker is present; if it isn't, the "next steps" hint quietly skips
+the Docker option — no error, no dead-end command.
 
 ### Option 2 — npm
 

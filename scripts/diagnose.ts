@@ -118,6 +118,14 @@ function main() {
     bad('`claude` CLI not on PATH');
   }
 
+  head('Docker (optional)');
+  try {
+    const v = execFileSync('docker', ['--version'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    ok(`installed: ${v} — you can run the UI with \`docker compose up -d\``);
+  } catch {
+    warn('not installed — that is fine; Docker is only needed to run the UI in a container.');
+  }
+
   console.log('');
   console.log('── Next steps ─────────────────────────────');
   console.log('  If hooks/MCP are configured but the log/DB are empty:');
